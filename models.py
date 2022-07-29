@@ -4,7 +4,7 @@ import enum
 
 
 class BookMeta(BaseModel):
-    title: str
+    title: Optional[str] = 'Unknown'
     author: Optional[list[str]] = None
     description: Optional[str] = None
     language: Optional[str] = None
@@ -34,6 +34,7 @@ class Paragraph(BaseModel):
         Image = 0
         Text = 1
         Title = 2
+        HTML = 3
 
     type: ParagraphType = ParagraphType.Text
     content: str
@@ -54,6 +55,6 @@ class Section(BaseModel):
 
 
 class Book(BaseModel):
-    meta: BookMeta
+    meta: BookMeta = BookMeta()
     sections: list[Section] = []
 

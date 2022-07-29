@@ -1,8 +1,12 @@
+import pathlib
+
 import requests
 import json
 import abc
-from models import BookMeta, ChapterMeta, Paragraph, Chapter, Section, Book
+from models import Paragraph, Chapter, Section, Book
 from pathlib import Path
+from converter import Markdowns2EpubConverter
+from converter_models import ConverterConfig
 
 
 class BaseCrawler:
@@ -34,12 +38,21 @@ class BaseCrawler:
         return self
 
     def save_as_markdown(self):
+        for file in self.out_put_path.glob('*.md'):
+            file.unlink()
         self.save_book_meta()
         self.save_chapters()
 
+    def save_as_epub(self):
+        self.out_put_path = Path('output')
+        self.save_as_markdown()
+        converter = Markdowns2EpubConverter()
+        converter.set_md_path(self.out_put_path)
+        converter.convert().save_to_file(pathlib.Path(f'{self.book.meta.title}.epub'))
+
     def save_book_meta(self):
         with open(self.out_put_path / 'book_meta.json', 'w') as f:
-            json.dump(self.book.meta.dict(), f, indent=4)
+            json.dump(self.book.meta.dict(), f, indent=4, ensure_ascii=False)
 
     def save_chapters(self):
         for section in self.book.sections:
@@ -51,9 +64,11 @@ class BaseCrawler:
     def chapter2md(cls, chapter: Chapter) -> str:
         md = '---\n'
         for k, v in chapter.metadata.dict().items():
-            if k == 'meta':
+            if k == 'meta' and v is not None:
                 for kk, vv in v.items():
                     md += f'{kk}: {vv}\n'
+                continue
+            if k == 'chapter_type':
                 continue
             md += f'{k}: {v}\n'
         md += '---\n\n'
@@ -67,6 +82,8 @@ class BaseCrawler:
             return f'![{paragraph.content}]({paragraph.content})\n'
         if paragraph.type == Paragraph.ParagraphType.Title:
             return f'# {paragraph.content}\n'
+        if paragraph.type == Paragraph.ParagraphType.HTML:
+            f'{paragraph.content}\n'
         return f'{paragraph.content}\n'
 
     @abc.abstractmethod
@@ -74,5 +91,8 @@ class BaseCrawler:
         pass
 
     @abc.abstractmethod
-    def parse(self):
+    def parse(self, chapter_url: str) -> Chapter:
         pass
+
+    def run(self):
+        self.crawl()

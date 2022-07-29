@@ -163,3 +163,4 @@ test/
 *.epub
 *.png
 **/.DS_Store
+output/
