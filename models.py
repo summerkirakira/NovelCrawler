@@ -50,6 +50,10 @@ class Section(BaseModel):
 
     section_name: str
     section_order: int
-    section_content: dict[int, Chapter] = {}
+    section_content: list[Chapter] = []
 
+
+class Book(BaseModel):
+    meta: BookMeta
+    sections: list[Section] = []
 
