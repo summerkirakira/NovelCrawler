@@ -57,6 +57,7 @@ class BaseCrawler:
     def save_chapters(self):
         for section in self.book.sections:
             for chapter in section.section_content:
+                chapter.metadata.chapter_name = chapter.metadata.chapter_name.replace('/', '_')
                 with open(self.out_put_path / f'{chapter.metadata.chapter_name}.md', 'w') as f:
                     f.write(self.chapter2md(chapter))
 
