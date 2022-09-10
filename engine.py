@@ -1,3 +1,4 @@
+import os
 import pathlib
 
 import requests
@@ -7,6 +8,7 @@ from models import Paragraph, Chapter, Section, Book
 from pathlib import Path
 from converter import Markdowns2EpubConverter
 from converter_models import ConverterConfig
+import opencc
 
 
 class BaseCrawler:

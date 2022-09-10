@@ -76,11 +76,11 @@ class MasiroCrawler(BaseCrawler):
 
 
 if __name__ == "__main__":
-    crawler = MasiroCrawler('https://ncode.syosetu.com/n4912do/')
+    crawler = MasiroCrawler(input('Enter the url of the book: '))
     crawler.set_headers({
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36'
     })
-    crawler.set_cover('https://masiro.me/images/encode/other-210806195235-Ukax.jpg?quality=100')
+    crawler.set_cover(input('Enter the url of the cover: '))
     crawler.run()
     crawler.save_as_epub()
 
