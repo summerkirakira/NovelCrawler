@@ -27,9 +27,9 @@ class MasiroCrawler(BaseCrawler):
         chapter_ul = book_info_page.find('div', class_='index_box')
         section_count: int = 0
         chapter_count: int = 0
-        current_section: Optional[Section] = None
+        current_section: Optional[Section] = Section(section_name="正文", section_order=section_count)
         for li in chapter_ul:
-            if isinstance(li,NavigableString):
+            if isinstance(li, NavigableString):
                 continue
             if li.name == 'div':
                 if current_section is not None:
