@@ -38,8 +38,10 @@ class MasiroCrawler(BaseCrawler):
                 current_section = Section(section_name=section_name, section_order=section_count)
             else:
                 for chapter_a in li.findAll('a'):
-                    chapter_count += 1
                     current_chapter = self.parse(self.root_url + chapter_a['href'])
+                    if current_chapter is None:
+                        continue
+                    chapter_count += 1
                     current_chapter.metadata.section_name = self.text_converter.convert(current_section.section_name)
                     current_chapter.metadata.section_order = current_section.section_order
                     current_chapter.metadata.chapter_order = chapter_count
@@ -48,9 +50,11 @@ class MasiroCrawler(BaseCrawler):
         if current_section is not None:
             self.book.sections.append(current_section)
 
-    def parse(self, chapter_url: str) -> Chapter:
+    def parse(self, chapter_url: str) -> Optional[Chapter]:
         chapter = Chapter()
         html = self._get_html(chapter_url)
+        if '立即打钱' in html:
+            return None
         chapter_page = BeautifulSoup(html, 'html.parser')
         chapter.metadata.chapter_name = self.text_converter.convert(chapter_page.find('span', class_='novel-title').div.text.strip().replace(u'\u3000', u'').replace(u'\xa0 ', u''))
         title = Paragraph(type=Paragraph.ParagraphType.Title, content=chapter.metadata.chapter_name)
@@ -81,7 +85,7 @@ if __name__ == "__main__":
     crawler = MasiroCrawler(input('Masiro URL: '))
     crawler.set_headers({
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36',
-        'Cookie': 'remember_admin_59ba36addc2b2f9401580f014c7f58ea4e30989d=eyJpdiI6InFGU2pMK3p4Z0ZBS0VHOUlLdzBkMGc9PSIsInZhbHVlIjoiMWpnYnZQOGprUWR0Nm9xY01Ub290Wk4zZTJsVERCdkpcL3drXC9pOVl6UjlJMk1FTzhweHBURWxGSGxidVI5VDVVUXJDOTg2bUJUNEt1akhQWU5aQzVPd050ZXNsV3ZjTFlsRm9tWWlTcGFzdHNUWDJQUExLNkVReHNreUU2bzZiUjAyblA5d3VKa1crMUxLZkdNNXc0eDV1QVNKcm1GUElEd0paSmcxREJCSEkrRDI0UDh4NTRnQ2FBNm5uWE5JTFYiLCJtYWMiOiI5NjE5MDc1ZDZkOGYwNGQ3NjQ2OTQxZTMxM2M0MzBlN2Q5ODUwMzU0YWY3ZmY3Y2Q4NmRlZGY1MjQ2ZmY4M2MyIn0%3D; last_signin=1659100751213; __cf_bm=O33ZqQNq29.gp1A_v4KaXDddY7u5wFdE7z8h.ZWyhDw-1659105665-0-ATJC2tx0Q2ZElKnVCs6z+NQSbaPNWnaLWNsCYquSmyDo80CigBhEIXSdQKN9c9Ww5Ebs5l9zGYzM5NQBDbYe+7GIrpUQDD6jlysPkdYwa1vJymRF2K+J9yXJ3MHAenjNxw==; XSRF-TOKEN=eyJpdiI6IjZHbXl2ZUZkNG4rMjF4WHQ5RklablE9PSIsInZhbHVlIjoidUFDQTA2SUx1UGtrN0lDbTdJUEtrMFlqQnYxMmM1cjM2UTloSGFcL2k0QWJwcGdHM3ByRjNFc1dxc1ljaE9XUFwvMzdzV1wvRjA5ODFJaDRMUG43NXpSZ1E9PSIsIm1hYyI6IjZmNmM4MjkzMmY2YWZhZGQ4NmFhNmJmMTJmZmRmNmNhYTI4MTMzODU1MmM0MDA2YjQwZDNiZmZiYmE1NDFmMWEifQ%3D%3D; laravel_session=eyJpdiI6IlwvWDgzVlNcL2dXbmJXTkg2VlBYaFJZUT09IiwidmFsdWUiOiJpUk9PWjdpVlFuQkU4YndDRUVmdEMxNXdiK3dXWEZZcFYxU0d5RnVKWkl1TUVyNW12SU1BQkZ5OEdPZ2hSaHdKbTBUZitCVWMzTVprVU5GaVlscis0UT09IiwibWFjIjoiMDU0YTlkM2E2YWZjZjUxZmJjYmM1NDUxNmMyYjg0N2JjYjJlNjFjZjYxY2ViZjFlODA2MzUzZmUxZTY5YzNhOCJ9'
+        'Cookie': '__cf_bm=pGckl8rvr3ErSATyaSSb1wS06CwPoeqJ4K62esCKdPA-1677800550-0-AQue724xtSQ0T56y5sbpX+2KuRom7t3zwTCUrT0Rybl7EpudqPSdo43NBYURzUja+TR9XHl3gx/jprJZANAYYWvZvHB5sXTY9TssILpPyE705e/Kh9Fv7OlTNPVBWNGboz9OmKwXc/EU/dxZVmfDsrQ=; remember_admin_59ba36addc2b2f9401580f014c7f58ea4e30989d=eyJpdiI6InpYemFJM05lRlVIZFBYbzQ5Y2pkQVE9PSIsInZhbHVlIjoiTGI4d3Rma1owOFdUaFVDcjBaaUNcL0FOd3RBcXN2eU40ejMwMWM4UkN6QktEemxOeFE2OXBoS2ZQaUZNN1wvaHpWanhCcmFyRXhBXC9LckhZUFg5bllnanNZc1dMTkVhXC9XZk42ZFFlbnpJYThna0srbWdtdW9PVkRHMzhkOVR0cEtEVVZ0YWUrbUpheG96Z1BNMGZneVRQcFBBUjYwSUFPSkFMaXA5K2xcLzlveTRPbktJb2JEQ1R3eDNoWGRGeUJiVXIiLCJtYWMiOiI5NWJjYTAxMTBjZGI4ZTM4YTNkNzlmZmJjZTNlNDM4MGEyNzNlNjAzZWM3MzVjMDIzNzdhYjI3YWJmYjdlMjhjIn0%3D; last_signin=1677800576966; XSRF-TOKEN=eyJpdiI6ImtjZ1ZRVUQ2K1V2S1hVY283VEhcL1Z3PT0iLCJ2YWx1ZSI6IlNXbUQ2QTdhYXV2MnNvc0RudzJGWHNha3J1SEpNOExjMjVjdHdVWnVGK251WXNcL3ZZVE44SlwvbHpXR3p0emdwUUQ2SEtwNzJUWTNPeVArN05hSVVBVlE9PSIsIm1hYyI6IjIxNjQ0MzRjMTQxMzY5ZDBiODUyOGY3NTYzNTlmYzVmMzYwNGNmYzY2OWY0ZmI2ZTQ2Y2FlNjk4Y2ZiODRmNjAifQ%3D%3D; laravel_session=eyJpdiI6Ik84TytEUk43a3A5clYzc1l3VHNoSnc9PSIsInZhbHVlIjoiMk1rRnQxVVlkdVhDWFpUVyt1YTVCXC9velZMZ01HTmxXbmJESG85RmRSdHBCZXUzODZDM1pITGZvaEJGYWRERFh5MlR6c1paV1FwWHJ6VHNoa1pCWHZnPT0iLCJtYWMiOiJhODU1NzVjMzhkY2VmN2E5ZDllZTA5ZWNlNTI1NzdiMWQzMDliZGIxMjhiNDJmZWJlODlkZGRlNjgzZjZmOGUzIn0%3D'
     })
     crawler.run()
     crawler.save_as_epub()

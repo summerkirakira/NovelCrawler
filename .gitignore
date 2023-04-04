@@ -163,4 +163,6 @@ test/
 *.epub
 *.png
 **/.DS_Store
+**/*.md
+**/*.epub
 output/

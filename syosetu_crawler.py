@@ -69,6 +69,7 @@ class MasiroCrawler(BaseCrawler):
         """
         text = text.replace('color: #444444;', '')
         text = text.replace('background-color: #ffffff;', '')
+        text = text.replace('//6198.mitemin.net', 'https://6198.mitemin.net')
         return text
 
     def set_cover(self, image_url: str):

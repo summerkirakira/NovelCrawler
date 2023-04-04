@@ -25,7 +25,7 @@ class BaseCrawler:
         self.headers = headers
         return self
 
-    def _get_html(self, url) -> str:
+    def _get_html(self, url: str) -> str:
         r = requests.get(url, headers=self.headers)
         return r.text
 
