@@ -165,4 +165,5 @@ test/
 **/.DS_Store
 **/*.md
 **/*.epub
+**/*.json
 output/

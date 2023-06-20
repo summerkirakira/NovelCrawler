@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 import opencc
 
 
-class MasiroCrawler(BaseCrawler):
+class SfAcgCrawler(BaseCrawler):
 
     def __init__(self, url: str):
         super().__init__(url)
@@ -81,7 +81,7 @@ class MasiroCrawler(BaseCrawler):
 
 
 if __name__ == "__main__":
-    crawler = MasiroCrawler('https://book.sfacg.com/Novel/' + input('SF book id: '))
+    crawler = SfAcgCrawler('https://book.sfacg.com/Novel/' + input('SF book id: '))
     crawler.set_headers({
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36'
     })

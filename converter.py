@@ -8,6 +8,7 @@ import abc
 from ebooklib import epub
 import pathlib
 import json
+from bs4 import BeautifulSoup
 
 
 class BasicChapterConverter:
@@ -150,7 +151,8 @@ class EPUBConverter:
 
     def process_html(self, html: str, file_path: pathlib.Path) -> str:
         html = "<html><body>" + html + "</body></html>"
-        root = ET.fromstring(html)
+        soup = BeautifulSoup(html, 'html.parser')
+        root = ET.fromstring(str(soup.prettify()))
         try:
             return ET.tostring(self.download_image(root, file_path), encoding='utf-8')
         except Exception as e:
