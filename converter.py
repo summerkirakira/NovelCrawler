@@ -33,7 +33,7 @@ class BasicChapterConverter:
         return html, ChapterMeta(**html.metadata)
 
     def convert_from_path(self, path: pathlib.Path) -> (str, ChapterMeta):
-        with path.open('r') as f:
+        with path.open('r', encoding='utf-8') as f:
             md_content: str = f.read()
         return self._convert_md_to_html(md_content)
 
@@ -48,13 +48,14 @@ class EPUBConverter:
     def __str__(self):
         return f"[{self.name}]"
 
-    def __init__(self, config: ConverterConfig):
+    def __init__(self, config: ConverterConfig, proxy: Optional[dict] = None):
         self.config = config
         self.epub_book = epub.EpubBook()
         self.section_dict: dict[str, SectionDict] = {
             'default': SectionDict(section_name='default', section_order=0, section_content={})
         }
         self.total_chapter_count = 1
+        self.proxy = proxy
 
     def load_meta_from_file(self, book_meta: BookMeta, file_path: pathlib.Path) -> 'EPUBConverter':
         if book_meta.title is not None:
@@ -69,7 +70,10 @@ class EPUBConverter:
         if book_meta.cover is not None:
             if book_meta.cover.startswith('http'):
                 try:
-                    self.set_cover(file_path.name, requests.get(book_meta.cover, headers=self.config.download_headers).content)
+                    if self.proxy is not None:
+                        self.set_cover("cover", requests.get(book_meta.cover, headers=self.config.download_headers, proxies=self.proxy).content)
+                    else:
+                        self.set_cover("cover", requests.get(book_meta.cover, headers=self.config.download_headers).content)
                 except Exception as e:
                     print(e)
             else:
@@ -165,7 +169,10 @@ class EPUBConverter:
             if img_url is not None:
                 img_url = img_url.strip()
                 if img_url.startswith('http'):
-                    img_data = requests.get(img_url, headers=self.config.download_headers).content
+                    if self.proxy is not None:
+                        img_data = requests.get(img_url, headers=self.config.download_headers, proxies=self.proxy).content
+                    else:
+                        img_data = requests.get(img_url, headers=self.config.download_headers).content
                     img_name = img_url.split('/')[-1]
                     self.epub_book.add_item(epub.EpubItem(file_name=f"images/{img_name}", content=img_data, media_type='image/jpeg'))
                     img.set('src', f"images/{img_name}")
@@ -186,8 +193,8 @@ class Markdowns2EpubConverter(EPUBConverter):
     Markdown to EPUB converter
     """
 
-    def __init__(self, config: ConverterConfig = ConverterConfig()):
-        super(Markdowns2EpubConverter, self).__init__(config)
+    def __init__(self, config: ConverterConfig = ConverterConfig(), proxy: Optional[dict] = None):
+        super(Markdowns2EpubConverter, self).__init__(config, proxy)
         self.chapter_converter = BasicChapterConverter(self.config)
         self.md_path: Optional[pathlib.Path] = None
 
@@ -256,7 +263,7 @@ class Markdowns2EpubConverter(EPUBConverter):
             raise ValueError("Path is not a directory")
         self.md_path = path
         if (path / 'book_meta.json').exists():
-            with (path / 'book_meta.json').open('r') as f:
+            with (path / 'book_meta.json').open('r', encoding="utf-8") as f:
                 book_meta = json.load(f)
             self.load_meta_from_file(BookMeta(**book_meta), path / 'book_meta.json')
         return self

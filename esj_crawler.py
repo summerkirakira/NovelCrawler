@@ -4,19 +4,20 @@ import re
 from typing import Optional
 from bs4 import BeautifulSoup
 from bs4.element import NavigableString
+import opencc
 
 
-class SyosetuCrawler(BaseCrawler):
+class EsjCrawler(BaseCrawler):
 
     def __init__(self, url: str):
         super().__init__(url)
-        self.root_url = 'https://ncode.syosetu.com/'
+        self.root_url = 'https://www.esjzone.cc/'
         self.cover_url = ''
 
     def crawl(self):
         html = self._get_html(self.book_url)
         book_info_page = BeautifulSoup(html, 'html.parser')
-        self.book.meta.title = book_info_page.find('p', class_='novel_title').text
+        self.book.meta.title = self.process_text(book_info_page.find('p', class_='p-t-10').text)
         self.book.meta.author = [book_info_page.find('div', class_='novel_writername').a.string]
         self.book.meta.cover = self.cover_url
         self.book.meta.description = book_info_page.find(id='novel_ex').text.replace('<br>', '\n')
@@ -61,23 +62,23 @@ class SyosetuCrawler(BaseCrawler):
         print("Parsed chapter: " + chapter.metadata.chapter_name)
         return chapter
 
-    @classmethod
-    def process_text(cls, text: str) -> str:
-        """
-        :param text:
-        :return:
-        """
-        text = text.replace('color: #444444;', '')
-        text = text.replace('background-color: #ffffff;', '')
-        text = text.replace('//6198.mitemin.net', 'https://6198.mitemin.net')
-        return text
-
     def set_cover(self, image_url: str):
         self.cover_url = image_url
 
+    @classmethod
+    def process_text(cls, text: str) -> str:
+        """
+        remove contents between （ and ）
+        :param text:
+        :return:
+        """
+        converter = opencc.OpenCC('t2s')
+        text = converter.convert(text)
+        return text
+
 
 if __name__ == "__main__":
-    crawler = SyosetuCrawler(input('Enter the url of the book: '))
+    crawler = EsjCrawler(input('Enter the url of the book: '))
     crawler.set_cover(input('Enter the url of the cover: '))
     crawler.run()
     crawler.save_as_epub()

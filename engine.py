@@ -1,22 +1,23 @@
-import os
 import pathlib
-
 import requests
 import json
 import abc
 from models import Paragraph, Chapter, Section, Book
 from pathlib import Path
 from converter import Markdowns2EpubConverter
-from converter_models import ConverterConfig
-import opencc
+from pydantic import BaseModel
+
+
+class CrawlerConfig(BaseModel):
+    headers: dict
+    config: dict = {}
 
 
 class BaseCrawler:
     def __init__(self, book_url):
         self.book_url = book_url
-        self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36'
-        }
+        self.config = self.parse_config()
+        self.headers = self.config.headers
         self.book: Book = Book()
         self.out_put_path = Path('output')
         self.out_put_path.mkdir(exist_ok=True)
@@ -26,7 +27,10 @@ class BaseCrawler:
         return self
 
     def _get_html(self, url: str) -> str:
-        r = requests.get(url, headers=self.headers)
+        if 'proxy' in self.config.config:
+            r = requests.get(url, headers=self.headers, proxies=self.config.config['proxy'])
+        else:
+            r = requests.get(url, headers=self.headers)
         return r.text
 
     def add_section(self, section: Section):
@@ -48,19 +52,22 @@ class BaseCrawler:
     def save_as_epub(self):
         self.out_put_path = Path('output')
         self.save_as_markdown()
-        converter = Markdowns2EpubConverter()
+        if "proxy" in self.config.config:
+            converter = Markdowns2EpubConverter(proxy=self.config.config['proxy'])
+        else:
+            converter = Markdowns2EpubConverter()
         converter.set_md_path(self.out_put_path)
         converter.convert().save_to_file(pathlib.Path(f'{self.book.meta.title}.epub'))
 
     def save_book_meta(self):
-        with open(self.out_put_path / 'book_meta.json', 'w') as f:
+        with open(self.out_put_path / 'book_meta.json', 'w', encoding='utf-8') as f:
             json.dump(self.book.meta.dict(), f, indent=4, ensure_ascii=False)
 
     def save_chapters(self):
         for section in self.book.sections:
             for chapter in section.section_content:
                 chapter.metadata.chapter_name = chapter.metadata.chapter_name.replace('/', '_')
-                with open(self.out_put_path / f'{chapter.metadata.chapter_name}.md', 'w') as f:
+                with open(self.out_put_path / f'{chapter.metadata.chapter_name}.md', 'w', encoding='utf-8') as f:
                     f.write(self.chapter2md(chapter))
 
     @classmethod
@@ -99,3 +106,12 @@ class BaseCrawler:
 
     def run(self):
         self.crawl()
+
+    def parse_config(self) -> CrawlerConfig:
+        config_path = Path('config') / f'{self.__class__.__name__}.json'
+        if not config_path.exists():
+            print(f'{config_path} not exists, abort')
+            raise FileNotFoundError
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = CrawlerConfig(**json.load(f))
+        return config
