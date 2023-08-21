@@ -155,9 +155,9 @@ class EPUBConverter:
 
     def process_html(self, html: str, file_path: pathlib.Path) -> str:
         html = "<html><body>" + html + "</body></html>"
-        soup = BeautifulSoup(html, 'html.parser')
-        root = ET.fromstring(str(soup.prettify()))
         try:
+            soup = BeautifulSoup(html, 'html.parser')
+            root = ET.fromstring(str(soup.prettify()))
             return ET.tostring(self.download_image(root, file_path), encoding='utf-8')
         except Exception as e:
             print(e)

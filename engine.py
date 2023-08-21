@@ -115,3 +115,8 @@ class BaseCrawler:
         with open(config_path, 'r', encoding='utf-8') as f:
             config = CrawlerConfig(**json.load(f))
         return config
+
+    @classmethod
+    def sanitize_filename(cls, filename: str) -> str:
+        filename = filename.replace('/', '_').replace('\\', '_').replace(':', '：').replace('*', '_').replace('"', '_').replace('<', '_').replace('>', '_').replace('|', '_').replace('?', '？')
+        return filename

@@ -17,47 +17,67 @@ class EsjCrawler(BaseCrawler):
     def crawl(self):
         html = self._get_html(self.book_url)
         book_info_page = BeautifulSoup(html, 'html.parser')
-        self.book.meta.title = self.process_text(book_info_page.find('p', class_='p-t-10').text)
-        self.book.meta.author = [book_info_page.find('div', class_='novel_writername').a.string]
-        self.book.meta.cover = self.cover_url
-        self.book.meta.description = book_info_page.find(id='novel_ex').text.replace('<br>', '\n')
-        self.book.meta.publisher = 'Syosetu'
-        self.book.meta.language = 'ja-JP'
-        self.book.meta.identifier = 'syosetu_book_' + self.book_url.replace(self.root_url, '').replace('/', '')
+        book_detail = book_info_page.find('div', class_='book-detail')
+        self.book.meta.title = self.process_text(book_detail.h2.text)
+
+        for child in book_detail.ul.children:
+            if child.name == 'li' and child.strong.text == '作者:':
+                self.book.meta.author = [child.a.text]
+                break
+        self.book.meta.cover = book_info_page.find('div', class_='product-gallery').a['href']
+        self.book.meta.description = self.process_text(book_info_page.find("div", class_='description').text)
+        self.book.meta.publisher = 'Esj'
+        self.book.meta.language = 'zh-CN'
+        self.book.meta.identifier = 'Esj_book_' + self.book_url.replace(self.root_url, '').replace('/', '')
         self.book.meta.meta = {'source': self.book_url}
-        chapter_ul = book_info_page.find('div', class_='index_box')
+        chapter_ul = book_info_page.find('div', id='chapterList')
         section_count: int = 0
         chapter_count: int = 0
-        current_section: Optional[Section] = Section(section_name="正文", section_order=section_count)
+        current_section: Optional[Section] = Section(section_name="番外", section_order=section_count)
         for li in chapter_ul:
             if isinstance(li, NavigableString):
                 continue
-            if li.name == 'div':
+            if li.name == 'p':
                 if current_section is not None:
-                    self.book.sections.append(current_section)
-                section_name = li.text.strip().replace(u'\u3000', u'').replace(u'\xa0 ', u'')
+                    if len(current_section.section_content) > 0:
+                        self.book.sections.append(current_section)
+                section_name = self.sanitize_filename(self.process_text(li.text))
                 section_count += 1
                 current_section = Section(section_name=section_name, section_order=section_count)
-            else:
+            elif li.name == 'a':
                 chapter_count += 1
-                current_chapter = self.parse(self.root_url + li.dd.a['href'])
+                current_chapter = self.parse(li['href'])
                 current_chapter.metadata.section_name = current_section.section_name
                 current_chapter.metadata.section_order = current_section.section_order
                 current_chapter.metadata.chapter_order = chapter_count
                 current_section.section_content.append(current_chapter)
+            elif li.name == 'details':
+                if current_section is not None:
+                    if len(current_section.section_content) > 0:
+                        self.book.sections.append(current_section)
+                section_name = self.sanitize_filename(self.process_text(li.summary.text))
+                section_count += 1
+                current_section = Section(section_name=section_name, section_order=section_count)
+                for a in li:
+                    if a.name == 'a':
+                        chapter_count += 1
+                        current_chapter = self.parse(a['href'])
+                        current_chapter.metadata.section_name = current_section.section_name
+                        current_chapter.metadata.section_order = current_section.section_order
+                        current_chapter.metadata.chapter_order = chapter_count
+                        current_section.section_content.append(current_chapter)
 
         if current_section is not None:
             self.book.sections.append(current_section)
-        a = 1
 
     def parse(self, chapter_url: str) -> Chapter:
         chapter = Chapter()
         html = self._get_html(chapter_url)
         chapter_page = BeautifulSoup(html, 'html.parser')
-        chapter.metadata.chapter_name = chapter_page.find('p', class_='novel_subtitle').text.strip().replace(u'\u3000', u'').replace(u'\xa0 ', u'')
+        chapter.metadata.chapter_name = self.sanitize_filename(self.process_text(chapter_page.find('h2').text.strip()))
         title = Paragraph(type=Paragraph.ParagraphType.Title, content=chapter.metadata.chapter_name)
         chapter.paragraphs.append(title)
-        content_box = chapter_page.find(id='novel_honbun')
+        content_box = chapter_page.find(class_='forum-content')
         chapter.paragraphs.append(Paragraph(type=Paragraph.ParagraphType.HTML, content=self.process_text(content_box.prettify())))
         print("Parsed chapter: " + chapter.metadata.chapter_name)
         return chapter
@@ -78,8 +98,7 @@ class EsjCrawler(BaseCrawler):
 
 
 if __name__ == "__main__":
-    crawler = EsjCrawler(input('Enter the url of the book: '))
-    crawler.set_cover(input('Enter the url of the cover: '))
+    crawler = EsjCrawler(input("请输入小说目录页地址："))
     crawler.run()
     crawler.save_as_epub()
 
