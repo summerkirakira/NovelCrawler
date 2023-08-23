@@ -53,7 +53,7 @@ class SyosetuCrawler(BaseCrawler):
         chapter = Chapter()
         html = self._get_html(chapter_url)
         chapter_page = BeautifulSoup(html, 'html.parser')
-        chapter.metadata.chapter_name = chapter_page.find('p', class_='novel_subtitle').text.strip().replace(u'\u3000', u'').replace(u'\xa0 ', u'')
+        chapter.metadata.chapter_name = self.sanitize_filename(chapter_page.find('p', class_='novel_subtitle').text.strip().replace(u'\u3000', u'').replace(u'\xa0 ', u''))
         title = Paragraph(type=Paragraph.ParagraphType.Title, content=chapter.metadata.chapter_name)
         chapter.paragraphs.append(title)
         content_box = chapter_page.find(id='novel_honbun')

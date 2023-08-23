@@ -8,6 +8,9 @@ from converter import Markdowns2EpubConverter
 from pydantic import BaseModel
 
 
+requests.DEFAULT_RETRIES = 20
+
+
 class CrawlerConfig(BaseModel):
     headers: dict
     config: dict = {}
@@ -27,11 +30,16 @@ class BaseCrawler:
         return self
 
     def _get_html(self, url: str) -> str:
-        if 'proxy' in self.config.config:
-            r = requests.get(url, headers=self.headers, proxies=self.config.config['proxy'])
-        else:
-            r = requests.get(url, headers=self.headers)
-        return r.text
+        while True:
+            try:
+                if 'proxy' in self.config.config:
+                    r = requests.get(url, headers=self.headers, proxies=self.config.config['proxy'])
+                else:
+                    r = requests.get(url, headers=self.headers)
+                return r.text
+            except Exception as e:
+                print(f"在请求{url}时发生错误: {e}，正在重试...")
+                continue
 
     def add_section(self, section: Section):
         self.book.sections.append(section)
